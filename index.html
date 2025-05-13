@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Crypto Void</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #070b19;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            cursor: none;
+        }
+
+        #starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #player {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.9) 10%, rgba(75, 0, 130, 0.8) 60%, rgba(138, 43, 226, 0.4) 80%, transparent 100%);
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.6);
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            transition: width 0.2s ease-out, height 0.2s ease-out, box-shadow 0.3s ease;
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background-position: center;
+            background-size: 60%;
+            background-repeat: no-repeat;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+
+        .cpu-player {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.9) 10%, rgba(220, 20, 60, 0.8) 60%, rgba(255, 99, 71, 0.4) 80%, transparent 100%);
+            box-shadow: 0 0 20px rgba(255, 99, 71, 0.5);
+            transform: translate(-50%, -50%);
+            z-index: 900;
+            transition: left 0.1s linear, top 0.1s linear, width 0.2s ease-out, height 0.2s ease-out;
+        }
+
+        #score-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            z-index: 2000;
+            text-shadow: 0 0 10px rgba(138, 43, 226, 0.8);
+        }
+
+        #size-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 18px;
+            z-index: 2000;
+            text-shadow: 0 0 10px rgba(138, 43, 226, 0.8);
+        }
+
+        .game-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(138, 43, 226, 0.8);
+            z-index: 2000;
+            opacity: 0.8;
+        }
+
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(7, 11, 25, 0.9);
+            z-index: 3000;
+        }
+
+        .start-screen h1 {
+            color: white;
+            font-size: 72px;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .start-button {
+            padding: 15px 60px;
+            font-size: 24px;
+            color: white;
+            background: linear-gradient(45deg, #6a11cb, #2575fc);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(106, 17, 203, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 35px rgba(106, 17, 203, 0.8);
+        }
+
+        .glow-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%, transparent 150px, rgba(7, 11, 25, 0.4) 100%);
+            z-index: 1500;
+        }
+
+        .particle {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0.7;
+            z-index: 500;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.7); }
+            50% { box-shadow: 0 0 30px rgba(255, 255, 255, 0.9); }
+            100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.7); }
+        }
+
+        .star {
+            animation: pulse 3s infinite;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(7, 11, 25, 0.85);
+            z-index: 4000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .game-over h1 {
+            color: white;
+            font-size: 72px;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .game-over p {
+            color: white;
+            font-size: 36px;
+            text-shadow: 0 0 10px rgba(138, 43, 226, 0.8);
+            margin-bottom: 40px;
+        }
+
+        .restart-button {
+            padding: 15px 60px;
+            font-size: 24px;
+            color: white;
+            background: linear-gradient(45deg, #6a11cb, #2575fc);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 25px rgba(106, 17, 203, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .restart-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 35px rgba(106, 17, 203, 0.8);
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 120px;
+            font-weight: bold;
+            text-shadow: 0 0 30px rgba(138, 43, 226, 0.8);
+            z-index: 3500;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="starfield"></div>
+        <div id="player"></div>
+        <div class="glow-effect"></div>
+        <div id="score-container">Score: <span id="score">0</span></div>
+        <div id="size-indicator">Size: <span id="size">1.0</span>x</div>
+        <div class="game-title">Cosmic Crypto Void</div>
+        <div id="countdown">3</div>
+        
+        <div class="start-screen" id="start-screen">
+            <h1>Cosmic Crypto Void</h1>
+            <button class="start-button" id="start-button">PLAY</button>
+        </div>
+        
+        <div class="game-over" id="game-over">
+            <h1>Game Over</h1>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button class="restart-button" id="restart-button">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const config = {
+            initialPlayerSize: 40,
+            playerGrowthRate: 0.05,
+            maxPlayerSize: 200, // Maximum player size to prevent scaling issues
+            starCount: 40,
+            starBaseSize: 20,
+            starSizeVariation: 15,
+            cpuPlayerCount: 5,
+            cpuPlayerMinSize: 20,
+            cpuPlayerMaxSize: 60,
+            cpuPlayerSpeed: 1.5,
+            gameTime: 60, // seconds
+            scoreMultiplierCap: 10 // Cap on score multiplier
+        };
+
+        // Game state
+        let gameActive = false;
+        let score = 0;
+        let playerSize = config.initialPlayerSize;
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let gameTimer;
+        let timeRemaining = config.gameTime;
+        let lastFrameTime = 0;
+        let deltaTime = 0;
+        
+        // DOM elements
+        const gameContainer = document.getElementById('game-container');
+        const playerElement = document.getElementById('player');
+        const starfield = document.getElementById('starfield');
+        const scoreElement = document.getElementById('score');
+        const sizeElement = document.getElementById('size');
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const gameOverScreen = document.getElementById('game-over');
+        const restartButton = document.getElementById('restart-button');
+        const finalScoreElement = document.getElementById('final-score');
+        const countdownElement = document.getElementById('countdown');
+
+        // Crypto logos for stars - these will be replaced with real images
+        const cryptoLogos = [
+            'images/solana-logo.png',
+            'images/bitcoin-logo.png',
+            'images/ethereum-logo.png',
+            'images/cardano-logo.png',
+            'images/ripple-logo.png',
+            'images/dogecoin-logo.png',
+            'images/polkadot-logo.png',
+            'images/chainlink-logo.png'
+        ];
+
+        // Initialize game
+        function initGame() {
+            // Set initial player position and size
+            playerElement.style.width = `${playerSize}px`;
+            playerElement.style.height = `${playerSize}px`;
+            playerElement.style.left = `${mouseX}px`;
+            playerElement.style.top = `${mouseY}px`;
+            
+            // Create stars
+            createStars();
+            
+            // Create CPU players
+            createCpuPlayers();
+            
+            // Create particle effects
+            createParticles();
+            
+            // Setup event listeners
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('keydown', onKeyDown);
+            
+            // Start button event
+            startButton.addEventListener('click', startGame);
+            
+            // Restart button event
+            restartButton.addEventListener('click', restartGame);
+        }
+
+        // Create stars with crypto logos
+        function createStars() {
+            for (let i = 0; i < config.starCount; i++) {
+                createStar();
+            }
+        }
+
+        // Create a single star
+        function createStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            const starSize = config.starBaseSize + Math.random() * config.starSizeVariation;
+            star.style.width = `${starSize}px`;
+            star.style.height = `${starSize}px`;
+            
+            // Position randomly but not too close to edges
+            const padding = 100;
+            const x = padding + Math.random() * (window.innerWidth - 2 * padding);
+            const y = padding + Math.random() * (window.innerHeight - 2 * padding);
+            star.style.left = `${x}px`;
+            star.style.top = `${y}px`;
+            
+            // Add random crypto logo
+            const logoIndex = Math.floor(Math.random() * cryptoLogos.length);
+            star.style.backgroundImage = `url(${cryptoLogos[logoIndex]})`;
+            
+            // Add random glow color
+            const hue = Math.floor(Math.random() * 360);
+            star.style.boxShadow = `0 0 20px hsla(${hue}, 100%, 70%, 0.7)`;
+            
+            starfield.appendChild(star);
+        }
+
+        // Create CPU players
+        function createCpuPlayers() {
+            for (let i = 0; i < config.cpuPlayerCount; i++) {
+                createCpuPlayer();
+            }
+        }
+
+        // Create a single CPU player
+        function createCpuPlayer() {
+            const cpu = document.createElement('div');
+            cpu.className = 'cpu-player';
+            
+            // Random size between min and max
+            const size = config.cpuPlayerMinSize + Math.random() * (config.cpuPlayerMaxSize - config.cpuPlayerMinSize);
+            cpu.style.width = `${size}px`;
+            cpu.style.height = `${size}px`;
+            
+            // Random position
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            cpu.style.left = `${x}px`;
+            cpu.style.top = `${y}px`;
+            
+            // Store CPU data for movement
+            cpu.dataset.size = size;
+            cpu.dataset.directionX = Math.random() > 0.5 ? 1 : -1;
+            cpu.dataset.directionY = Math.random() > 0.5 ? 1 : -1;
+            cpu.dataset.speed = 0.5 + Math.random() * config.cpuPlayerSpeed;
+            
+            gameContainer.appendChild(cpu);
+        }
+
+        // Create particle effects
+        function createParticles() {
+            for (let i = 0; i < 100; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = 1 + Math.random() * 3;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // Random opacity
+                particle.style.opacity = 0.3 + Math.random() * 0.7;
+                
+                gameContainer.appendChild(particle);
+            }
+        }
+
+        // Mouse movement handler
+        function onMouseMove(e) {
+            if (!gameActive) return;
+            
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        }
+
+        // Keyboard handler for arrow keys
+        function onKeyDown(e) {
+            if (!gameActive) return;
+            
+            const speed = 20;
+            
+            switch (e.key) {
+                case 'ArrowUp':
+                    mouseY = Math.max(0, mouseY - speed);
+                    break;
+                case 'ArrowDown':
+                    mouseY = Math.min(window.innerHeight, mouseY + speed);
+                    break;
+                case 'ArrowLeft':
+                    mouseX = Math.max(0, mouseX - speed);
+                    break;
+                case 'ArrowRight':
+                    mouseX = Math.min(window.innerWidth, mouseX + speed);
+                    break;
+            }
+        }
+
+        // Game loop
+        function gameLoop(currentTime) {
+            if (!gameActive) return;
+            
+            // Calculate delta time for smooth animation
+            if (!lastFrameTime) lastFrameTime = currentTime;
+            deltaTime = (currentTime - lastFrameTime) / 1000; // Convert to seconds
+            lastFrameTime = currentTime;
+            
+            // Limit deltaTime to prevent huge jumps if browser tab was inactive
+            if (deltaTime > 0.1) deltaTime = 0.1;
+            
+            // Update player position
+            playerElement.style.left = `${mouseX}px`;
+            playerElement.style.top = `${mouseY}px`;
+            
+            // Check collisions with stars
+            const stars = document.querySelectorAll('.star');
+            stars.forEach(star => {
+                if (checkCollision(playerElement, star)) {
+                    // Consume star
+                    starfield.removeChild(star);
+                    score += 10;
+                    scoreElement.textContent = score;
+                    
+                    // Grow player but respect the max size
+                    const newSize = Math.min(
+                        playerSize + (config.playerGrowthRate * playerSize), 
+                        config.maxPlayerSize
+                    );
+                    
+                    // Only apply growth if we're not at max size
+                    if (newSize > playerSize) {
+                        playerSize = newSize;
+                        playerElement.style.width = `${playerSize}px`;
+                        playerElement.style.height = `${playerSize}px`;
+                        
+                        // Apply stronger glow effect as player grows
+                        const glowIntensity = Math.min(30 + (playerSize / 10), 60);
+                        playerElement.style.boxShadow = `0 0 ${glowIntensity}px rgba(138, 43, 226, 0.6)`;
+                    }
+                    
+                    // Update size indicator (capped at the multiplier cap)
+                    const sizeMultiplier = Math.min(
+                        (playerSize / config.initialPlayerSize).toFixed(1),
+                        config.scoreMultiplierCap
+                    );
+                    sizeElement.textContent = sizeMultiplier;
+                    
+                    // Create new star
+                    createStar();
+                }
+            });
+            
+            // Update CPU players
+            const cpuPlayers = document.querySelectorAll('.cpu-player');
+            cpuPlayers.forEach(cpu => {
+                // Move CPU player with delta time for smooth movement
+                moveCpuPlayer(cpu, deltaTime);
+                
+                // Check collisions with player
+                if (checkCollision(playerElement, cpu)) {
+                    const cpuSize = parseFloat(cpu.dataset.size);
+                    
+                    if (playerSize > cpuSize * 1.2) {
+                        // Player eats CPU
+                        gameContainer.removeChild(cpu);
+                        score += 50;
+                        scoreElement.textContent = score;
+                        
+                        // Grow player with limits
+                        const newSize = Math.min(
+                            playerSize + (config.playerGrowthRate * cpuSize),
+                            config.maxPlayerSize
+                        );
+                        
+                        // Only apply growth if we're not at max size
+                        if (newSize > playerSize) {
+                            playerSize = newSize;
+                            playerElement.style.width = `${playerSize}px`;
+                            playerElement.style.height = `${playerSize}px`;
+                            
+                            // Apply stronger glow effect as player grows
+                            const glowIntensity = Math.min(30 + (playerSize / 10), 60);
+                            playerElement.style.boxShadow = `0 0 ${glowIntensity}px rgba(138, 43, 226, 0.6)`;
+                        }
+                        
+                        // Update size indicator (capped)
+                        const sizeMultiplier = Math.min(
+                            (playerSize / config.initialPlayerSize).toFixed(1),
+                            config.scoreMultiplierCap
+                        );
+                        sizeElement.textContent = sizeMultiplier;
+                        
+                        // Create new CPU player
+                        createCpuPlayer();
+                    } else if (cpuSize > playerSize * 1.2) {
+                        // CPU eats player
+                        endGame();
+                    }
+                }
+            });
+            
+            // Request next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Move CPU player
+        function moveCpuPlayer(cpu, dt) {
+            const cpuX = parseFloat(cpu.style.left);
+            const cpuY = parseFloat(cpu.style.top);
+            const baseSpeed = parseFloat(cpu.dataset.speed);
+            const speed = baseSpeed * (dt * 60); // Normalize to ~60fps
+            let dirX = parseFloat(cpu.dataset.directionX);
+            let dirY = parseFloat(cpu.dataset.directionY);
+            
+            // Change direction if near edge
+            if (cpuX < 50 || cpuX > window.innerWidth - 50) {
+                dirX *= -1;
+                cpu.dataset.directionX = dirX;
+            }
+            
+            if (cpuY < 50 || cpuY > window.innerHeight - 50) {
+                dirY *= -1;
+                cpu.dataset.directionY = dirY;
+            }
+            
+            // Random direction change (0.5% chance per frame)
+            if (Math.random() < 0.005) {
+                cpu.dataset.directionX = Math.random() > 0.5 ? 1 : -1;
+                cpu.dataset.directionY = Math.random() > 0.5 ? 1 : -1;
+            }
+            
+            // Chase or flee from player based on size
+            const cpuSize = parseFloat(cpu.dataset.size);
+            const distance = Math.sqrt(Math.pow(mouseX - cpuX, 2) + Math.pow(mouseY - cpuY, 2));
+            
+            if (distance < 300) {
+                const angleToPlayer = Math.atan2(mouseY - cpuY, mouseX - cpuX);
+                
+                if (cpuSize > playerSize * 1.2) {
+                    // Chase player
+                    dirX = Math.cos(angleToPlayer);
+                    dirY = Math.sin(angleToPlayer);
+                } else if (playerSize > cpuSize * 1.2) {
+                    // Flee from player
+                    dirX = -Math.cos(angleToPlayer);
+                    dirY = -Math.sin(angleToPlayer);
+                }
+            }
+            
+            // Update position
+            cpu.style.left = `${cpuX + dirX * speed}px`;
+            cpu.style.top = `${cpuY + dirY * speed}px`;
+        }
+
+        // Check collision between two elements
+        function checkCollision(elem1, elem2) {
+            const rect1 = {
+                x: parseFloat(elem1.style.left),
+                y: parseFloat(elem1.style.top),
+                radius: parseFloat(elem1.style.width) / 2
+            };
+            
+            const rect2 = {
+                x: parseFloat(elem2.style.left),
+                y: parseFloat(elem2.style.top),
+                radius: parseFloat(elem2.style.width) / 2
+            };
+            
+            const distance = Math.sqrt(
+                Math.pow(rect1.x - rect2.x, 2) + 
+                Math.pow(rect1.y - rect2.y, 2)
+            );
+            
+            return distance < rect1.radius + rect2.radius;
+        }
+
+        // Start the game
+        function startGame() {
+            startScreen.style.display = 'none';
+            
+            // Display countdown
+            countdownElement.style.opacity = '1';
+            let countdown = 3;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownElement.style.opacity = '0';
+                    
+            // Start the actual game
+                    gameActive = true;
+                    startGameTimer();
+                    lastFrameTime = 0; // Reset time tracking
+                    requestAnimationFrame(gameLoop);
+                }
+            }, 1000);
+        }
+
+        // Start game timer
+        function startGameTimer() {
+            timeRemaining = config.gameTime;
+            
+            gameTimer = setInterval(() => {
+                timeRemaining--;
+                
+                if (timeRemaining <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // End the game
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            
+            finalScoreElement.textContent = score;
+            gameOverScreen.style.opacity = '1';
+            gameOverScreen.style.pointerEvents = 'auto';
+        }
+
+        // Restart the game
+        function restartGame() {
+            // Reset game state
+            score = 0;
+            playerSize = config.initialPlayerSize;
+            scoreElement.textContent = score;
+            sizeElement.textContent = '1.0';
+            
+            // Reset player
+            playerElement.style.width = `${playerSize}px`;
+            playerElement.style.height = `${playerSize}px`;
+            
+            // Clear stars and CPU players
+            starfield.innerHTML = '';
+            document.querySelectorAll('.cpu-player').forEach(cpu => {
+                gameContainer.removeChild(cpu);
+            });
+            
+            // Create new stars and CPU players
+            createStars();
+            createCpuPlayers();
+            
+            // Hide game over screen
+            gameOverScreen.style.opacity = '0';
+            gameOverScreen.style.pointerEvents = 'none';
+            
+            // Start the game
+            startGame();
+        }
+
+        // Initialize when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
